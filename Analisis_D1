@@ -1,0 +1,14 @@
+Dia 1: 18/09/2023
+========================================================================
+Entramos a una llamada por Meet donde vimos el programa y lo analizamos.
+
+NOTAS:
+1.- El programa trata sobre un sistema de servicios de barras.
+2.- No tiene un inicio de sesion por administrador, por lo que se puede acceder a cualquier parte del programa.
+3.- No cuenta con una conexion a base de datos, por lo que los datos no se guardan.
+4.- El boton de cargar la tabla no le vemos una funcion ya que el usuario pierde tiempo.
+5.- No es amigable al usuario.
+6.- Los campos de la tabla se pueden mover.
+7.- ¿Que datos vamos a imprimir?
+
+========================================================================
