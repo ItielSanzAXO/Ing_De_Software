@@ -11,6 +11,7 @@ package calculodebarras;
 public class CalculoDeBarras {
 
     public static void main(String[] args) {
-        System.out.println("Hello World!");
+        Login nv = new Login();
+        nv.setVisible(true);
     }
 }

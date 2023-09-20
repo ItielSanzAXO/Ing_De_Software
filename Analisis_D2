@@ -7,6 +7,8 @@ de la figura 1. (link figma)
 Implementamos el nuevo diseño creando un proyecto desde cero y nos permita
 añadir las nuevas ideas.
 
+/Medidad de los iconos 32x32
+
 -Agregaremos en el login, el registro y la tabla.
 -Como pendiente nos falta ver que SGBD utilizar y como lanzar el PDF.
 
