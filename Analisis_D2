@@ -1,0 +1,13 @@
+Dia 2: 19/09/2023
+========================================================================
+En la clase vimos varios diseños para implementar en el nuevo software.
+Decidimos que el diseño que mejor se adapta a nuestras necesidades es el
+de la figura 1. (link figma)
+
+Implementamos el nuevo diseño creando un proyecto desde cero y nos permita
+añadir las nuevas ideas.
+
+-Agregaremos en el login, el registro y la tabla.
+-Como pendiente nos falta ver que SGBD utilizar y como lanzar el PDF.
+
+========================================================================
