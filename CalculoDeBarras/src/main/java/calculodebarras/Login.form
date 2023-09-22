@@ -50,10 +50,10 @@
                       <Component id="jLabel1" max="32767" attributes="0"/>
                   </Group>
                   <EmptySpace type="separate" max="-2" attributes="0"/>
-                  <Group type="103" groupAlignment="0" attributes="0">
-                      <Component id="btnLogin" alignment="0" min="-2" pref="109" max="-2" attributes="0"/>
-                      <Component id="txtUss" min="-2" pref="109" max="-2" attributes="0"/>
-                      <Component id="txtPass" min="-2" pref="109" max="-2" attributes="0"/>
+                  <Group type="103" groupAlignment="0" max="-2" attributes="0">
+                      <Component id="btnLogin" alignment="0" pref="109" max="32767" attributes="0"/>
+                      <Component id="txtUss" pref="109" max="32767" attributes="0"/>
+                      <Component id="txtPass" alignment="0" max="32767" attributes="0"/>
                   </Group>
                   <EmptySpace pref="74" max="32767" attributes="0"/>
               </Group>
@@ -69,8 +69,8 @@
                   </Group>
                   <EmptySpace type="unrelated" max="-2" attributes="0"/>
                   <Group type="103" groupAlignment="3" attributes="0">
-                      <Component id="txtPass" alignment="3" min="-2" max="-2" attributes="0"/>
                       <Component id="jLabel2" alignment="3" min="-2" max="-2" attributes="0"/>
+                      <Component id="txtPass" alignment="3" min="-2" max="-2" attributes="0"/>
                   </Group>
                   <EmptySpace type="unrelated" max="-2" attributes="0"/>
                   <Component id="btnLogin" min="-2" pref="30" max="-2" attributes="0"/>
@@ -89,8 +89,6 @@
           </Properties>
         </Component>
         <Component class="javax.swing.JTextField" name="txtUss">
-        </Component>
-        <Component class="javax.swing.JTextField" name="txtPass">
         </Component>
         <Component class="javax.swing.JLabel" name="jLabel2">
           <Properties>
@@ -113,6 +111,8 @@
           <Events>
             <EventHandler event="actionPerformed" listener="java.awt.event.ActionListener" parameters="java.awt.event.ActionEvent" handler="btnLoginActionPerformed"/>
           </Events>
+        </Component>
+        <Component class="javax.swing.JPasswordField" name="txtPass">
         </Component>
       </SubComponents>
     </Container>

@@ -11,6 +11,7 @@ public class DatabaseConnection {
     private DatabaseConnection(String connectionString) {
         try {
             connection = DriverManager.getConnection(connectionString);
+            System.out.println("Conexión establecida a la base de datos.");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -24,8 +25,9 @@ public class DatabaseConnection {
         return instance;
     }
 
-    // Método para obtener la conexión a la base de datos
+    // Método para obtener la conexión a la base de datos sin cerrarla aquí
     public Connection getConnection() {
         return connection;
     }
 }
+
