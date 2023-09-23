@@ -138,9 +138,16 @@ public class Login extends javax.swing.JFrame {
             // Las credenciales son válidas, muestra un mensaje de éxito
             JOptionPane.showMessageDialog(null, "Inicio de sesión exitoso.");
             // Aquí puedes abrir la ventana principal o realizar otras acciones
+            Panel panel = new Panel();
+            panel.setVisible(true);
+            // Cierra el JFrame de Login
+            dispose();
         } else {
             // Las credenciales son inválidas, muestra un mensaje de error
             JOptionPane.showMessageDialog(null, "Usuario o contraseña incorrectos.", "Error de inicio de sesión", JOptionPane.ERROR_MESSAGE);
+            // Borra los campos de usuario y contraseña
+            txtUss.setText(null);
+            txtPass.setText(null);
         }
     } catch (SQLException ex) {
         ex.printStackTrace();

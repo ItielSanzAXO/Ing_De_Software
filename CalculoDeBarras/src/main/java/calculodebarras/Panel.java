@@ -4,6 +4,19 @@
  */
 package calculodebarras;
 
+import java.awt.List;
+import java.awt.event.ItemEvent;
+import java.awt.event.ItemListener;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import javax.swing.JOptionPane;
+import javax.swing.table.DefaultTableModel;
+
 /**
  *
  * @author ItielSanz<ItielSanzAXO>
@@ -13,10 +26,261 @@ public class Panel extends javax.swing.JFrame {
     /**
      * Creates new form Panel
      */
+    
+  
     public Panel() {
         initComponents();
+        llenarComboBox();
+        validarCampos();
+        configurarListeners();
+        actualizarTabla();
+        
     }
+    
+// Método para obtener registros de la base de datos y cargarlos en la tabla
+private void actualizarTabla() {
+    // Define los nombres de las columnas
+    String[] columnas = {"No. Orden", "Nombre Técnico", "Se resolvió", "Hora de Inicio", "Hora de Final", "Escalonado a"};
 
+    // Define el modelo de la tabla con nombres de columnas
+    DefaultTableModel model = new DefaultTableModel(columnas, 0) {
+        // Sobreescribe el método isCellEditable para hacer que todas las celdas sean no editables
+        @Override
+        public boolean isCellEditable(int row, int column) {
+            return false;
+        }
+    };
+
+    // Conecta a la base de datos y obtén los registros
+    try {
+        String connectionString = "jdbc:sqlserver://ingsoftdatabase.database.windows.net:1433;database=IngSoftwareDB;user=admin26@ingsoftdatabase;password=@Axopunk2023.;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
+        Connection connection = DriverManager.getConnection(connectionString);
+
+        String sql = "SELECT No_Orden, Nom_Tecnico, Se_resolvio, Hr_Inicio, Hr_Final, Escalonado_A FROM Registros";
+        PreparedStatement statement = connection.prepareStatement(sql);
+        ResultSet resultSet = statement.executeQuery();
+
+        // Formatea las horas para que muestren solo horas y minutos
+        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm");
+        
+        // Itera a través de los resultados y agrega cada registro a la tabla
+        while (resultSet.next()) {
+            int noOrden = resultSet.getInt("No_Orden");
+            String nombreTecnico = resultSet.getString("Nom_Tecnico");
+            String seResolvio = resultSet.getString("Se_resolvio");
+            String horaInicio = sdf.format(resultSet.getTime("Hr_Inicio"));
+            String horaFinal = sdf.format(resultSet.getTime("Hr_Final"));
+            String escalonadoA = resultSet.getString("Escalonado_A");
+
+            // Agrega una fila a la tabla con los datos del registro
+            model.addRow(new Object[]{noOrden, nombreTecnico, seResolvio, horaInicio, horaFinal, escalonadoA});
+        }
+
+        // Cierra la conexión a la base de datos
+        connection.close();
+    } catch (SQLException e) {
+        e.printStackTrace();
+        JOptionPane.showMessageDialog(this, "Error al obtener los registros de la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
+    }
+    
+    // Deshabilita el movimiento de columnas en el encabezado de la tabla
+    tblRegistros.getTableHeader().setReorderingAllowed(false);
+
+    // Asigna el modelo de tabla personalizado a la tabla
+    tblRegistros.setModel(model);
+}
+
+    private void configurarListeners() {
+        cmbResolvio.addItemListener(new ItemListener() {
+            @Override
+            public void itemStateChanged(ItemEvent e) {
+                if (e.getStateChange() == ItemEvent.SELECTED) {
+                    String resolvioSeleccionado = (String) cmbResolvio.getSelectedItem();
+
+                    // Verifica si la opción seleccionada es "Si"
+                    if ("Si".equals(resolvioSeleccionado)) {
+                        cmbEscalonado.setEnabled(false); // Deshabilita el JComboBox de Escalonado
+                        cmbEscalonado.setSelectedIndex(0); // Establece la selección en la opción predeterminada
+                    } else {
+                        cmbEscalonado.setEnabled(true); // Habilita el JComboBox de Escalonado
+                    }
+                }
+            }
+        });
+    }
+    
+    
+    private void guardarRegistro(String tecnico, String resolvio, String horaInicio, String horaFinal, String escalonado) {
+    // Cadena de conexión a la base de datos
+    String connectionString = "jdbc:sqlserver://ingsoftdatabase.database.windows.net:1433;database=IngSoftwareDB;user=admin26@ingsoftdatabase;password=@Axopunk2023.;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
+    
+    // Consulta SQL para insertar un nuevo registro en la tabla "Registros"
+    String sql = "INSERT INTO Registros (Nom_Tecnico, Se_resolvio, Hr_Inicio, Hr_Final, Escalonado_A) VALUES (?, ?, ?, ?, ?)";
+    
+    try {
+        // Establecer la conexión a la base de datos
+        Connection connection = DriverManager.getConnection(connectionString);
+        
+        // Crear una sentencia preparada con la consulta SQL
+        PreparedStatement preparedStatement = connection.prepareStatement(sql);
+        
+        // Establecer los valores de los parámetros en la sentencia preparada
+        preparedStatement.setString(1, tecnico);
+        preparedStatement.setString(2, resolvio);
+        preparedStatement.setString(3, horaInicio);
+        preparedStatement.setString(4, horaFinal);
+        
+        // Verificar si el campo de Escalonado A tiene un valor válido
+        if (!"-Selecciona-".equals(escalonado)) {
+            preparedStatement.setString(5, escalonado);
+        } else {
+            preparedStatement.setNull(5, java.sql.Types.VARCHAR); // Establecer como NULL si no hay valor
+        }
+        
+        // Ejecutar la inserción en la base de datos
+        preparedStatement.executeUpdate();
+        
+        // Cerrar la conexión y la sentencia preparada
+        preparedStatement.close();
+        connection.close();
+        
+        // Mostrar un mensaje de éxito
+        JOptionPane.showMessageDialog(this, "Registro guardado exitosamente. (POR FIN...)", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        
+        // Limpia los campos
+        limpiarCampos();
+    } catch (SQLException e) {
+        e.printStackTrace();
+        // Manejo de errores: muestra un mensaje de error en caso de fallo en la inserción
+        JOptionPane.showMessageDialog(this, "Error al guardar el registro.", "Error", JOptionPane.ERROR_MESSAGE);
+    }
+}
+
+private void limpiarCampos() {
+    // Restablecer los JComboBox a su valor predeterminado
+    cmbTecnico.setSelectedItem("-Selecciona-");
+    cmbResolvio.setSelectedItem("-Selecciona-");
+    cmbHoraInicio.setSelectedItem("-Selecciona-");
+    cmbHoraFinal.setSelectedItem("-Selecciona-");
+    cmbEscalonado.setSelectedItem("-Selecciona-");
+    
+    // Actulizamos la tabla
+    actualizarTabla();
+}
+    
+    
+private void validarCampos() {
+    // Obtiene los valores seleccionados en los JComboBox
+    String resolvio = (String) cmbResolvio.getSelectedItem();
+    String escalonado = (String) cmbEscalonado.getSelectedItem();
+
+    // Obtiene los valores seleccionados en los JComboBox de hora
+    String horaInicio = (String) cmbHoraInicio.getSelectedItem();
+    String horaFinal = (String) cmbHoraFinal.getSelectedItem();
+
+    // Obtiene el valor seleccionado en cmbTecnico
+    String tecnico = (String) cmbTecnico.getSelectedItem();
+
+    // Valida las horas
+    if (validarHoras(horaInicio, horaFinal)) {
+        // Las horas son válidas, continúa con las otras validaciones
+
+        // Verifica si todos los campos están completos y cumple con las condiciones
+        if (!"-Selecciona-".equals(tecnico) && !"-Selecciona-".equals(resolvio) &&
+            ((resolvio.equals("No") && !"-Selecciona-".equals(escalonado)) || resolvio.equals("Si"))) {
+            btnGuardar.setEnabled(true);
+        } else {
+            btnGuardar.setEnabled(false);
+        }
+    } else {
+        // Las horas no son válidas, desactiva el botón de guardar
+        btnGuardar.setEnabled(false);
+    }
+}
+
+private boolean validarHoras(String horaInicio, String horaFinal) {
+    try {
+        // Divide las horas en horas y minutos
+        String[] partesHoraInicio = horaInicio.split(":");
+        String[] partesHoraFinal = horaFinal.split(":");
+        
+        // Obtén las horas y minutos como enteros
+        int horaInicioInt = Integer.parseInt(partesHoraInicio[0]);
+        int minutoInicioInt = Integer.parseInt(partesHoraInicio[1]);
+        int horaFinalInt = Integer.parseInt(partesHoraFinal[0]);
+        int minutoFinalInt = Integer.parseInt(partesHoraFinal[1]);
+        
+        // Valida que las horas estén en rangos válidos
+        if (horaInicioInt >= 0 && horaInicioInt <= 23 && horaFinalInt >= 0 && horaFinalInt <= 23) {
+            // Si las horas son iguales, los minutos de inicio deben ser menores que los de fin
+            if (horaInicioInt == horaFinalInt) {
+                return minutoInicioInt < minutoFinalInt;
+            } else if (horaInicioInt < horaFinalInt) {
+                return true; // Las horas son válidas
+            } else {
+                return false; // Hora de inicio mayor que hora final
+            }
+        } else {
+            return false; // Las horas no son válidas
+        }
+    } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
+        // Error al convertir o dividir las horas, consideramos que no son válidas
+        return false;
+    }
+}
+
+
+    private void llenarComboBox() {
+        // Configura la conexión a la base de datos
+        String connectionString = "jdbc:sqlserver://ingsoftdatabase.database.windows.net:1433;database=IngSoftwareDB;user=admin26@ingsoftdatabase;password=@Axopunk2023.;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
+        Connection connection = null;
+
+        try {
+            // Establece la conexión a la base de datos
+            connection = DriverManager.getConnection(connectionString);
+
+            // Consulta SQL para recuperar los nombres de técnicos de la tabla "Tecnicos"
+            String sql = "SELECT NombreTecnico FROM Tecnicos";
+            PreparedStatement statement = connection.prepareStatement(sql);
+            ResultSet resultSet = statement.executeQuery();
+
+            // Lista para almacenar los nombres de técnicos
+            ArrayList<String> nombresTecnicos = new ArrayList<>();
+
+            // Recorre los resultados y agrega los nombres a la lista
+            while (resultSet.next()) {
+                String nombreTecnico = resultSet.getString("NombreTecnico");
+                nombresTecnicos.add(nombreTecnico);
+            }
+
+            // Llena los JComboBox con los nombres de técnicos
+            for (String nombreTecnico : nombresTecnicos) {
+                cmbTecnico.addItem(nombreTecnico);
+                //cmbResolvio.addItem(nombreTecnico);
+                cmbEscalonado.addItem(nombreTecnico);
+            }
+
+            // Agrega la opción "-Selecciona-" como selección inicial
+            cmbTecnico.setSelectedItem("-Selecciona-");
+            cmbResolvio.setSelectedItem("-Selecciona-");
+            cmbEscalonado.setSelectedItem("-Selecciona-");
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al conectar a la base de datos.", "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            // Cierra la conexión a la base de datos
+            if (connection != null) {
+                try {
+                    connection.close();
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+    }
+    
+    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -27,42 +291,204 @@ public class Panel extends javax.swing.JFrame {
     private void initComponents() {
 
         jTabbedPane2 = new javax.swing.JTabbedPane();
-        jPanel2 = new javax.swing.JPanel();
-        jPanel3 = new javax.swing.JPanel();
+        pRegistro = new javax.swing.JPanel();
+        jLabel1 = new javax.swing.JLabel();
+        cmbTecnico = new javax.swing.JComboBox<>();
+        jLabel2 = new javax.swing.JLabel();
+        cmbResolvio = new javax.swing.JComboBox<>();
+        jLabel3 = new javax.swing.JLabel();
+        jLabel4 = new javax.swing.JLabel();
+        jLabel5 = new javax.swing.JLabel();
+        cmbEscalonado = new javax.swing.JComboBox<>();
+        btnGuardar = new javax.swing.JButton();
+        cmbHoraInicio = new javax.swing.JComboBox<>();
+        cmbHoraFinal = new javax.swing.JComboBox<>();
+        pRegistros = new javax.swing.JPanel();
+        jScrollPane1 = new javax.swing.JScrollPane();
+        tblRegistros = new javax.swing.JTable();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jTabbedPane2.setBackground(new java.awt.Color(255, 255, 255));
 
-        jPanel2.setBackground(new java.awt.Color(128, 230, 241));
+        pRegistro.setBackground(new java.awt.Color(128, 230, 241));
 
-        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
-        jPanel2.setLayout(jPanel2Layout);
-        jPanel2Layout.setHorizontalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 720, Short.MAX_VALUE)
+        jLabel1.setText("Nombre del Técnico");
+
+        cmbTecnico.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "-Selecciona-" }));
+        cmbTecnico.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbTecnicoItemStateChanged(evt);
+            }
+        });
+        cmbTecnico.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                cmbTecnicoPropertyChange(evt);
+            }
+        });
+
+        jLabel2.setText("¿Se resolvió?");
+
+        cmbResolvio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "-Selecciona-", "Si", "No" }));
+        cmbResolvio.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbResolvioItemStateChanged(evt);
+            }
+        });
+        cmbResolvio.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                cmbResolvioPropertyChange(evt);
+            }
+        });
+
+        jLabel3.setText("Hora de Inicio");
+
+        jLabel4.setText("Hora de Final");
+
+        jLabel5.setText("Escalonado a:");
+
+        cmbEscalonado.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "-Selecciona-" }));
+        cmbEscalonado.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbEscalonadoItemStateChanged(evt);
+            }
+        });
+        cmbEscalonado.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                cmbEscalonadoPropertyChange(evt);
+            }
+        });
+
+        btnGuardar.setText("Guardar");
+        btnGuardar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnGuardarActionPerformed(evt);
+            }
+        });
+        btnGuardar.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                btnGuardarPropertyChange(evt);
+            }
+        });
+
+        cmbHoraInicio.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "-Selecciona-", "08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00" }));
+        cmbHoraInicio.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbHoraInicioItemStateChanged(evt);
+            }
+        });
+        cmbHoraInicio.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                cmbHoraInicioPropertyChange(evt);
+            }
+        });
+
+        cmbHoraFinal.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "-Selecciona-", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "13:00", "13:30", "14:00", "14:30", "15:00" }));
+        cmbHoraFinal.addItemListener(new java.awt.event.ItemListener() {
+            public void itemStateChanged(java.awt.event.ItemEvent evt) {
+                cmbHoraFinalItemStateChanged(evt);
+            }
+        });
+        cmbHoraFinal.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                cmbHoraFinalPropertyChange(evt);
+            }
+        });
+
+        javax.swing.GroupLayout pRegistroLayout = new javax.swing.GroupLayout(pRegistro);
+        pRegistro.setLayout(pRegistroLayout);
+        pRegistroLayout.setHorizontalGroup(
+            pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pRegistroLayout.createSequentialGroup()
+                .addGap(27, 27, 27)
+                .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addGroup(pRegistroLayout.createSequentialGroup()
+                        .addGap(264, 264, 264)
+                        .addComponent(btnGuardar))
+                    .addGroup(pRegistroLayout.createSequentialGroup()
+                        .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pRegistroLayout.createSequentialGroup()
+                                .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                                    .addComponent(jLabel1)
+                                    .addComponent(jLabel3))
+                                .addGap(33, 33, 33))
+                            .addGroup(pRegistroLayout.createSequentialGroup()
+                                .addComponent(jLabel5)
+                                .addGap(67, 67, 67)))
+                        .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
+                            .addComponent(cmbEscalonado, 0, 124, Short.MAX_VALUE)
+                            .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                                .addComponent(cmbTecnico, 0, 124, Short.MAX_VALUE)
+                                .addComponent(cmbHoraInicio, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                        .addGap(64, 64, 64)
+                        .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                            .addComponent(jLabel2)
+                            .addComponent(jLabel4))
+                        .addGap(70, 70, 70)
+                        .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
+                            .addComponent(cmbResolvio, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE)
+                            .addComponent(cmbHoraFinal, javax.swing.GroupLayout.PREFERRED_SIZE, 124, javax.swing.GroupLayout.PREFERRED_SIZE))))
+                .addContainerGap(37, Short.MAX_VALUE))
         );
-        jPanel2Layout.setVerticalGroup(
-            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 360, Short.MAX_VALUE)
+        pRegistroLayout.setVerticalGroup(
+            pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pRegistroLayout.createSequentialGroup()
+                .addGap(33, 33, 33)
+                .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel1)
+                    .addComponent(cmbTecnico, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cmbResolvio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2))
+                .addGap(31, 31, 31)
+                .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel3)
+                    .addComponent(jLabel4)
+                    .addComponent(cmbHoraInicio, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(cmbHoraFinal, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(30, 30, 30)
+                .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(jLabel5)
+                    .addComponent(cmbEscalonado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addGap(62, 62, 62)
+                .addComponent(btnGuardar)
+                .addContainerGap(82, Short.MAX_VALUE))
         );
 
-        jTabbedPane2.addTab("Registro", jPanel2);
+        jTabbedPane2.addTab("Registro", pRegistro);
 
-        jPanel3.setBackground(new java.awt.Color(128, 230, 241));
+        pRegistros.setBackground(new java.awt.Color(128, 230, 241));
 
-        javax.swing.GroupLayout jPanel3Layout = new javax.swing.GroupLayout(jPanel3);
-        jPanel3.setLayout(jPanel3Layout);
-        jPanel3Layout.setHorizontalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 720, Short.MAX_VALUE)
+        tblRegistros.setModel(new javax.swing.table.DefaultTableModel(
+            new Object [][] {
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null},
+                {null, null, null, null}
+            },
+            new String [] {
+                "Title 1", "Title 2", "Title 3", "Title 4"
+            }
+        ));
+        jScrollPane1.setViewportView(tblRegistros);
+
+        javax.swing.GroupLayout pRegistrosLayout = new javax.swing.GroupLayout(pRegistros);
+        pRegistros.setLayout(pRegistrosLayout);
+        pRegistrosLayout.setHorizontalGroup(
+            pRegistrosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pRegistrosLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 662, Short.MAX_VALUE)
+                .addContainerGap())
         );
-        jPanel3Layout.setVerticalGroup(
-            jPanel3Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-            .addGap(0, 360, Short.MAX_VALUE)
+        pRegistrosLayout.setVerticalGroup(
+            pRegistrosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGroup(pRegistrosLayout.createSequentialGroup()
+                .addContainerGap()
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 306, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
-        jTabbedPane2.addTab("Registros", jPanel3);
+        jTabbedPane2.addTab("Registros", pRegistros);
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
@@ -76,7 +502,65 @@ public class Panel extends javax.swing.JFrame {
         );
 
         pack();
+        setLocationRelativeTo(null);
     }// </editor-fold>//GEN-END:initComponents
+
+    private void cmbTecnicoPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_cmbTecnicoPropertyChange
+    validarCampos();        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbTecnicoPropertyChange
+
+    private void cmbResolvioPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_cmbResolvioPropertyChange
+validarCampos();          // TODO add your handling code here:
+    }//GEN-LAST:event_cmbResolvioPropertyChange
+
+    private void cmbEscalonadoPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_cmbEscalonadoPropertyChange
+validarCampos();          // TODO add your handling code here:
+    }//GEN-LAST:event_cmbEscalonadoPropertyChange
+
+    private void btnGuardarPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_btnGuardarPropertyChange
+validarCampos();          // TODO add your handling code here:
+    }//GEN-LAST:event_btnGuardarPropertyChange
+
+    private void cmbHoraInicioPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_cmbHoraInicioPropertyChange
+validarCampos();        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbHoraInicioPropertyChange
+
+    private void cmbHoraFinalPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_cmbHoraFinalPropertyChange
+validarCampos();        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbHoraFinalPropertyChange
+
+    private void cmbTecnicoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cmbTecnicoItemStateChanged
+        // TODO add your handling code here:
+        validarCampos();
+    }//GEN-LAST:event_cmbTecnicoItemStateChanged
+
+    private void cmbResolvioItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cmbResolvioItemStateChanged
+       validarCampos();
+    }//GEN-LAST:event_cmbResolvioItemStateChanged
+
+    private void cmbHoraInicioItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cmbHoraInicioItemStateChanged
+validarCampos();        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbHoraInicioItemStateChanged
+
+    private void cmbHoraFinalItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cmbHoraFinalItemStateChanged
+validarCampos();        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbHoraFinalItemStateChanged
+
+    private void cmbEscalonadoItemStateChanged(java.awt.event.ItemEvent evt) {//GEN-FIRST:event_cmbEscalonadoItemStateChanged
+validarCampos();        // TODO add your handling code here:
+    }//GEN-LAST:event_cmbEscalonadoItemStateChanged
+
+    private void btnGuardarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnGuardarActionPerformed
+        // Obtiene los valores seleccionados en los JComboBox
+    String tecnico = (String) cmbTecnico.getSelectedItem();
+    String resolvio = (String) cmbResolvio.getSelectedItem();
+    String horaInicio = (String) cmbHoraInicio.getSelectedItem();
+    String horaFinal = (String) cmbHoraFinal.getSelectedItem();
+    String escalonado = (String) cmbEscalonado.getSelectedItem();
+
+    // Llama al método guardarRegistro con los valores obtenidos
+    guardarRegistro(tecnico, resolvio, horaInicio, horaFinal, escalonado);
+    }//GEN-LAST:event_btnGuardarActionPerformed
 
     /**
      * @param args the command line arguments
@@ -114,8 +598,21 @@ public class Panel extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
-    private javax.swing.JPanel jPanel2;
-    private javax.swing.JPanel jPanel3;
+    private javax.swing.JButton btnGuardar;
+    private javax.swing.JComboBox<String> cmbEscalonado;
+    private javax.swing.JComboBox<String> cmbHoraFinal;
+    private javax.swing.JComboBox<String> cmbHoraInicio;
+    private javax.swing.JComboBox<String> cmbResolvio;
+    private javax.swing.JComboBox<String> cmbTecnico;
+    private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JLabel jLabel3;
+    private javax.swing.JLabel jLabel4;
+    private javax.swing.JLabel jLabel5;
+    private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTabbedPane jTabbedPane2;
+    private javax.swing.JPanel pRegistro;
+    private javax.swing.JPanel pRegistros;
+    private javax.swing.JTable tblRegistros;
     // End of variables declaration//GEN-END:variables
 }
