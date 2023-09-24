@@ -1,0 +1,9 @@
+Creamos la BD, decidimos que fuera en Azure ya que asi 
+no tenemos que instalar nada en local y podemos acceder desde cualquier sitio xolo con conexion a internet
+
+creamos la BD que se llama "IngSoftwareBD" junto con 2 tablas
+la tabla de "LoRegistros" "Tecnicos" y la tabla de "Usuarios"
+
+esto lo hicimos por que asi el usuario no puede ingresar al sisema si no cuenta conlas credenciales
+que se encuentran en la tabla de "Usuarios" 
+la tabla "Tecnicos" la usamos para dar de alta a los tecnicos que van a dar de alta los registros
