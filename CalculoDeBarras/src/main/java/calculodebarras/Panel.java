@@ -4,9 +4,23 @@
  */
 package calculodebarras;
 
-import java.awt.List;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfWriter;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
 import java.awt.event.ItemEvent;
 import java.awt.event.ItemListener;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
@@ -14,8 +28,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import javax.swing.table.DefaultTableModel;
+
 
 /**
  *
@@ -26,7 +46,7 @@ public class Panel extends javax.swing.JFrame {
     /**
      * Creates new form Panel
      */
-    
+    private int tabIndex = -1; // Inicializa con un valor que no se corresponde con ningún índice de pestaña
   
     public Panel() {
         initComponents();
@@ -35,6 +55,54 @@ public class Panel extends javax.swing.JFrame {
         configurarListeners();
         actualizarTabla();
         
+         // Llama al método para configurar el ListSelectionListener
+        selectTabla();
+
+        // Asegurarse de que no haya filas seleccionadas al cargar el panel
+        tblRegistros.clearSelection();
+        
+    }
+    
+    // Método para configurar el ListSelectionListener
+    private void selectTabla() {
+        tblRegistros.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
+            @Override
+            public void valueChanged(ListSelectionEvent e) {
+                // Verificar si hay al menos una fila seleccionada
+                if (tblRegistros.getSelectedRow() != -1) {
+                    btnEliminar.setEnabled(true); // Habilitar el botón si hay una fila seleccionada
+                } else {
+                    btnEliminar.setEnabled(false); // Deshabilitar el botón si no hay filas seleccionadas
+                }
+            }
+        });
+        
+        // Agrega un enfoque (focus) a la tabla tblRegistros
+    //tblRegistros.addFocusListener(new FocusAdapter() {
+    //   @Override
+    //  public void focusLost(FocusEvent e) {
+            // Deshabilita el botón "btnEliminar" cuando la tabla pierde el enfoque
+     //     btnEliminar.setEnabled(false);
+            //COMETANDO BOTON ELIMINARtblRegistros.clearSelection();
+     // }
+    //});
+    
+    
+        // Agrega un ChangeListener al JTabbedPane para deseleccionar las filas al cambiar de pestaña
+    jTabbedPane2.addChangeListener(new ChangeListener() {
+        @Override
+        public void stateChanged(ChangeEvent e) {
+            // Verifica si el índice de la pestaña actual es diferente de la anterior
+            if (jTabbedPane2.getSelectedIndex() != tabIndex) {
+                // Deseleccionar cualquier fila seleccionada en la tabla
+                tblRegistros.clearSelection();
+                
+                // Actualiza el índice de la pestaña actual
+                tabIndex = jTabbedPane2.getSelectedIndex();
+                //COMENTADO BOTON 2tblRegistros.clearSelection();
+            }
+        }
+    });
     }
     
 // Método para obtener registros de la base de datos y cargarlos en la tabla
@@ -109,7 +177,6 @@ private void actualizarTabla() {
         });
     }
     
-    
     private void guardarRegistro(String tecnico, String resolvio, String horaInicio, String horaFinal, String escalonado) {
     // Cadena de conexión a la base de datos
     String connectionString = "jdbc:sqlserver://ingsoftdatabase.database.windows.net:1433;database=IngSoftwareDB;user=admin26@ingsoftdatabase;password=@Axopunk2023.;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
@@ -167,7 +234,6 @@ private void limpiarCampos() {
     // Actulizamos la tabla
     actualizarTabla();
 }
-    
     
 private void validarCampos() {
     // Obtiene los valores seleccionados en los JComboBox
@@ -229,7 +295,6 @@ private boolean validarHoras(String horaInicio, String horaFinal) {
     }
 }
 
-
     private void llenarComboBox() {
         // Configura la conexión a la base de datos
         String connectionString = "jdbc:sqlserver://ingsoftdatabase.database.windows.net:1433;database=IngSoftwareDB;user=admin26@ingsoftdatabase;password=@Axopunk2023.;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
@@ -279,8 +344,6 @@ private boolean validarHoras(String horaInicio, String horaFinal) {
             }
         }
     }
-    
-    
     /**
      * This method is called from within the constructor to initialize the form.
      * WARNING: Do NOT modify this code. The content of this method is always
@@ -306,6 +369,8 @@ private boolean validarHoras(String horaInicio, String horaFinal) {
         pRegistros = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         tblRegistros = new javax.swing.JTable();
+        btnImprimir = new javax.swing.JToggleButton();
+        btnEliminar = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -417,9 +482,8 @@ private boolean validarHoras(String horaInicio, String horaFinal) {
                                 .addGap(67, 67, 67)))
                         .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING, false)
                             .addComponent(cmbEscalonado, 0, 124, Short.MAX_VALUE)
-                            .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
-                                .addComponent(cmbTecnico, 0, 124, Short.MAX_VALUE)
-                                .addComponent(cmbHoraInicio, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
+                            .addComponent(cmbTecnico, javax.swing.GroupLayout.Alignment.LEADING, 0, 124, Short.MAX_VALUE)
+                            .addComponent(cmbHoraInicio, javax.swing.GroupLayout.Alignment.LEADING, 0, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                         .addGap(64, 64, 64)
                         .addGroup(pRegistroLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                             .addComponent(jLabel2)
@@ -451,7 +515,7 @@ private boolean validarHoras(String horaInicio, String horaFinal) {
                     .addComponent(cmbEscalonado, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                 .addGap(62, 62, 62)
                 .addComponent(btnGuardar)
-                .addContainerGap(82, Short.MAX_VALUE))
+                .addContainerGap(110, Short.MAX_VALUE))
         );
 
         jTabbedPane2.addTab("Registro", pRegistro);
@@ -469,7 +533,32 @@ private boolean validarHoras(String horaInicio, String horaFinal) {
                 "Title 1", "Title 2", "Title 3", "Title 4"
             }
         ));
+        tblRegistros.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                tblRegistrosPropertyChange(evt);
+            }
+        });
         jScrollPane1.setViewportView(tblRegistros);
+
+        btnImprimir.setText("Imprimir");
+        btnImprimir.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnImprimirActionPerformed(evt);
+            }
+        });
+
+        btnEliminar.setText("Eliminar");
+        btnEliminar.setEnabled(false);
+        btnEliminar.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEliminarActionPerformed(evt);
+            }
+        });
+        btnEliminar.addPropertyChangeListener(new java.beans.PropertyChangeListener() {
+            public void propertyChange(java.beans.PropertyChangeEvent evt) {
+                btnEliminarPropertyChange(evt);
+            }
+        });
 
         javax.swing.GroupLayout pRegistrosLayout = new javax.swing.GroupLayout(pRegistros);
         pRegistros.setLayout(pRegistrosLayout);
@@ -479,13 +568,23 @@ private boolean validarHoras(String horaInicio, String horaFinal) {
                 .addContainerGap()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 662, Short.MAX_VALUE)
                 .addContainerGap())
+            .addGroup(pRegistrosLayout.createSequentialGroup()
+                .addGap(48, 48, 48)
+                .addComponent(btnEliminar)
+                .addGap(124, 124, 124)
+                .addComponent(btnImprimir)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         pRegistrosLayout.setVerticalGroup(
             pRegistrosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pRegistrosLayout.createSequentialGroup()
                 .addContainerGap()
                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 306, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(pRegistrosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(btnImprimir)
+                    .addComponent(btnEliminar))
+                .addContainerGap(11, Short.MAX_VALUE))
         );
 
         jTabbedPane2.addTab("Registros", pRegistros);
@@ -562,6 +661,51 @@ validarCampos();        // TODO add your handling code here:
     guardarRegistro(tecnico, resolvio, horaInicio, horaFinal, escalonado);
     }//GEN-LAST:event_btnGuardarActionPerformed
 
+    private void btnImprimirActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnImprimirActionPerformed
+        try {
+            generarPDF();
+            JOptionPane.showMessageDialog(this, "PDF generado exitosamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al generar el PDF.", "Error", JOptionPane.ERROR_MESSAGE);
+        }    }//GEN-LAST:event_btnImprimirActionPerformed
+
+    private void btnEliminarActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEliminarActionPerformed
+        int filaSeleccionada = tblRegistros.getSelectedRow();
+    
+    if (filaSeleccionada != -1) {
+        int respuesta = JOptionPane.showConfirmDialog(this, "¿Seguro que desea eliminar el registro seleccionado?", "Confirmar eliminación", JOptionPane.YES_NO_OPTION);
+        
+        if (respuesta == JOptionPane.YES_OPTION) {
+            // Obtener el valor de la columna "ID" en la fila seleccionada
+            int idRegistro = (int) tblRegistros.getValueAt(filaSeleccionada, 0);
+            
+            // Llamar al método para eliminar el registro
+            boolean eliminado = eliminarRegistro(idRegistro);
+            
+            if (eliminado) {
+                JOptionPane.showMessageDialog(this, "Registro eliminado correctamente.", "Éxito", JOptionPane.INFORMATION_MESSAGE);
+                
+                // Volver a seleccionar la fila después de la eliminación
+                tblRegistros.setRowSelectionInterval(filaSeleccionada, filaSeleccionada);
+                actualizarTabla();
+            } else {
+                JOptionPane.showMessageDialog(this, "Error al eliminar el registro.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    } else {
+        JOptionPane.showMessageDialog(this, "Seleccione un registro para eliminarlo.", "Error", JOptionPane.ERROR_MESSAGE);
+    }
+    }//GEN-LAST:event_btnEliminarActionPerformed
+
+    private void tblRegistrosPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_tblRegistrosPropertyChange
+    selectTabla();        // TODO add your handling code here:
+    }//GEN-LAST:event_tblRegistrosPropertyChange
+
+    private void btnEliminarPropertyChange(java.beans.PropertyChangeEvent evt) {//GEN-FIRST:event_btnEliminarPropertyChange
+        // TODO add your handling code here:
+    }//GEN-LAST:event_btnEliminarPropertyChange
+
     /**
      * @param args the command line arguments
      */
@@ -598,7 +742,9 @@ validarCampos();        // TODO add your handling code here:
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JButton btnEliminar;
     private javax.swing.JButton btnGuardar;
+    private javax.swing.JToggleButton btnImprimir;
     private javax.swing.JComboBox<String> cmbEscalonado;
     private javax.swing.JComboBox<String> cmbHoraFinal;
     private javax.swing.JComboBox<String> cmbHoraInicio;
@@ -615,4 +761,93 @@ validarCampos();        // TODO add your handling code here:
     private javax.swing.JPanel pRegistros;
     private javax.swing.JTable tblRegistros;
     // End of variables declaration//GEN-END:variables
+
+    private void generarPDF() throws FileNotFoundException{
+         Connection connection = null;
+
+        try {
+            // Establecer la conexión con la base de datos
+            String connectionString = "jdbc:sqlserver://ingsoftdatabase.database.windows.net:1433;database=IngSoftwareDB;user=admin26@ingsoftdatabase;password=@Axopunk2023.;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
+            connection = DriverManager.getConnection(connectionString);
+
+            // Consulta SQL para obtener los datos de la tabla "Registros"
+            String sql = "SELECT * FROM Registros";
+            PreparedStatement preparedStatement = connection.prepareStatement(sql);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            // Mostrar el diálogo de selección de archivo
+            JFileChooser fileChooser = new JFileChooser();
+            int result = fileChooser.showSaveDialog(this);
+
+            if (result == JFileChooser.APPROVE_OPTION) {
+                File selectedFile = fileChooser.getSelectedFile();
+
+                // Crear el documento PDF en la ubicación seleccionada
+                Document document = new Document(PageSize.A4);
+                PdfWriter.getInstance(document, new FileOutputStream(selectedFile));
+                document.open();
+
+                // Agregar un título al PDF
+                Font titleFont = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD);
+                Paragraph title = new Paragraph("Reporte de Registros\n\n", titleFont);
+                title.setAlignment(Paragraph.ALIGN_CENTER);
+                document.add(title);
+
+                // Crear una tabla para los datos de la tabla "Registros"
+                PdfPTable table = new PdfPTable(resultSet.getMetaData().getColumnCount());
+                table.setWidthPercentage(100);
+
+                // Agregar encabezados de columna a la tabla
+                for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
+                    PdfPCell headerCell = new PdfPCell(new Paragraph(resultSet.getMetaData().getColumnName(i)));
+                    headerCell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                    table.addCell(headerCell);
+                }
+
+                // Agregar datos de la tabla "Registros"
+                while (resultSet.next()) {
+                    for (int i = 1; i <= resultSet.getMetaData().getColumnCount(); i++) {
+                        PdfPCell cell;
+                        if (resultSet.getMetaData().getColumnName(i).equals("Hr_Inicio") || resultSet.getMetaData().getColumnName(i).equals("Hr_Final")) {
+                            // Formatear campos de hora inicio y hora final
+                            SimpleDateFormat timeFormat = new SimpleDateFormat("HH:mm");
+                            cell = new PdfPCell(new Paragraph(timeFormat.format(resultSet.getTime(i))));
+                        } else {
+                            cell = new PdfPCell(new Paragraph(resultSet.getString(i)));
+                        }
+                        cell.setHorizontalAlignment(Element.ALIGN_CENTER);
+                        table.addCell(cell);
+                    }
+                }
+
+                document.add(table);
+                document.close();
+            }
+        } catch (DocumentException | SQLException e) {
+            e.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error al generar el PDF.", "Error", JOptionPane.ERROR_MESSAGE);
+        } finally {
+            try {
+                if (connection != null) {
+                    connection.close();
+                }
+            } catch (SQLException e) {
+                e.printStackTrace();
+            }
+        }}
+
+    private boolean eliminarRegistro(int idRegistro) {
+            String connectionString = "jdbc:sqlserver://ingsoftdatabase.database.windows.net:1433;database=IngSoftwareDB;user=admin26@ingsoftdatabase;password=@Axopunk2023.;encrypt=true;trustServerCertificate=false;hostNameInCertificate=*.database.windows.net;loginTimeout=30;";
+
+        String sql = "DELETE FROM Registros WHERE No_Orden = ?";
+    try (Connection conn = DriverManager.getConnection(connectionString);
+         PreparedStatement stmt = conn.prepareStatement(sql)) {
+        stmt.setInt(1, idRegistro);
+        int filasAfectadas = stmt.executeUpdate();
+        return filasAfectadas > 0;
+    } catch (SQLException e) {
+        e.printStackTrace();
+        return false;
+    }
+    }
 }
